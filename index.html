@@ -26,8 +26,6 @@ footer{border-top:1px solid var(--border);padding:8px 10px}
 #input:focus{border-color:var(--green)}
 button.send{background:var(--fg);color:#000;border:none;padding:8px 12px;font-family:inherit;font-weight:700;cursor:pointer}
 button.send:hover{background:var(--green)}
-
-/* SETTINGS MODAL */
 #settingsPanel{position:fixed;top:0;right:-360px;width:340px;height:100%;background:var(--card);border-left:1px solid var(--border);padding:16px;transition:0.3s;z-index:99;overflow-y:auto}
 #settingsPanel.open{right:0}
 .setting{margin:16px 0;padding:12px;background:#000;border:1px solid var(--border)}
@@ -49,22 +47,18 @@ button.send:hover{background:var(--green)}
 <button class="icon-btn" onclick="toggleSettings()">⚙ SETTINGS</button>
 </div>
 </header>
-
 <div id="log"></div>
-
 <footer>
 <div class="input-row">
 <input id="nick" value="nasar@patna" placeholder="nickname">
 <input id="input" placeholder="type msg, /j #room, /nick name, /clear" autocomplete="off">
 <button class="send" onclick="send()">SEND</button>
 </div>
-<div style="font-size:10px;color:#666;margin-top:6px">🔒 end-to-end encrypted • no servers • p2p mesh <span id="encStatus">[AES-256 + X25519]</span></div>
+<div style="font-size:10px;color:#666;margin-top:6px">🔒 end-to-end encrypted • no servers • p2p mesh <span id="encStatus">[AES-256 + X25519]</span> | <span onclick="scan()" style="cursor:pointer;color:var(--green)">[SCAN PEERS]</span></div>
 </footer>
-
 <div id="settingsPanel">
 <h2 style="font-size:13px;margin-bottom:12px">SETTINGS_</h2>
 <button class="icon-btn" onclick="toggleSettings()" style="float:right;margin-top:-28px">X CLOSE</button>
-
 <div class="setting">
 <h3>TRANSPORT</h3>
 <div class="toggle"><span>Bluetooth Low Energy</span><div class="switch on" id="btSwitch" onclick="toggle('bt')"></div></div>
@@ -74,65 +68,61 @@ button.send:hover{background:var(--green)}
 <div class="toggle"><span>Store & Forward</span><div class="switch on" id="sfSwitch" onclick="toggle('sf')"></div></div>
 <div class="info">Relays msg even when peer offline</div>
 </div>
-
 <div class="setting">
 <h3>ENCRYPTION</h3>
 <div class="toggle"><span>End-to-End Encryption</span><div class="badge on">ON</div></div>
-<div class="info">✓ AES-256-GCM<br>✓ X25519 key exchange<br>✓ Ed25519 signatures<br>Session keys only, stored on device</div>
-<div class="toggle"><span>Emergency Wipe</span><div class="switch" id="wipeSwitch" onclick="toggle('wipe')"></div></div>
-<div class="info">Triple tap power to wipe all chats</div>
+<div class="info">✓ AES-256-GCM<br>✓ X25519 key exchange<br>✓ Ed25519 signatures</div>
 </div>
-
 <div class="setting">
 <h3>PRIVACY</h3>
 <div class="toggle"><span>Dummy Traffic</span><div class="switch on" id="dummySwitch" onclick="toggle('dummy')"></div></div>
 <div class="info">Obfuscates bluetooth traffic</div>
 <div class="toggle"><span>Anonymous IDs</span><div class="badge on">ON</div></div>
-<div class="info">No phone number, rotating IDs</div>
 </div>
-
 <div class="setting">
 <h3>ABOUT</h3>
 <div class="info">Nasar Mesh v1.0<br>Made in Patna, Bihar<br>Inspired by Bitchat (Jack Dorsey)<br>Open Source • No Tracking</div>
 </div>
 </div>
-
 <script>
-let peers=['local:1'], enc=true, btOn=true, wifiOn=false;
+let peers=[], btOn=true, wifiOn=false;
 const logEl=document.getElementById('log'), inputEl=document.getElementById('input'), nickEl=document.getElementById('nick');
-
 function ts(){return new Date().toTimeString().slice(0,5)}
-function add(h,c='msg'){let d=document.createElement('div');d.className=c;d.innerHTML=h;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight}
-function sys(t){add(`<span class="time">[${ts()}]</span> <span style="color:#888">* ${t}</span>`,'sys')}
-
+function add(h){let d=document.createElement('div');d.innerHTML=h;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight}
+function sys(t){add(`<span class="time">[${ts()}]</span> <span class="sys">* ${t}</span>`)}
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open')}
-
 function toggle(type){
- let el=document.getElementById(type+'Switch') || document.getElementById(type=='bt'?'btSwitch':type=='wifi'?'wifiSwitch':type+'Switch');
- if(!el) return;
- el.classList.toggle('on');
- if(type==='bt'){ btOn=el.classList.contains('on'); document.getElementById('status').textContent=btOn?'mesh active':'bt off'; sys(btOn?'bluetooth mesh enabled':'bluetooth disabled'); }
- if(type==='wifi'){ wifiOn=el.classList.contains('on'); sys(wifiOn?'wifi direct enabled - faster relay':'wifi direct disabled'); }
+  let map={bt:'btSwitch', wifi:'wifiSwitch', sf:'sfSwitch', dummy:'dummySwitch', wipe:'wipeSwitch'};
+  let el=document.getElementById(map[type]); if(!el) return;
+  el.classList.toggle('on');
+  let isOn=el.classList.contains('on');
+  if(type==='bt'){ btOn=isOn; document.getElementById('status').textContent=isOn?'mesh active':'bt off'; sys(isOn?'bluetooth mesh enabled':'bluetooth disabled'); }
+  if(type==='wifi'){ wifiOn=isOn; sys(wifiOn?'wifi direct enabled':'wifi direct disabled'); }
+  if(type==='sf'){ sys(isOn?'store & forward enabled':'store & forward disabled'); }
+  if(type==='dummy'){ sys(isOn?'dummy traffic on':'dummy traffic off'); }
 }
-
 async function scan(){
- try{ await navigator.bluetooth.requestDevice({acceptAllDevices:true}); document.getElementById('status').textContent='mesh active • 300m'; document.getElementById('peerCount').textContent='2 peers'; sys('mesh connected, 2 peers found, e2e keys exchanged'); }
- catch(e){ document.getElementById('status').textContent='demo • chrome ble required'; sys('demo mode - enable BT in settings for real mesh'); }
+  try{ 
+    if(navigator.bluetooth){
+      await navigator.bluetooth.requestDevice({acceptAllDevices:true}); 
+      document.getElementById('status').textContent='mesh active • 300m'; 
+      document.getElementById('peerCount').textContent='2 peers'; 
+      sys('mesh connected, 2 peers found, e2e keys exchanged'); 
+    } else { throw new Error('no ble'); }
+  } catch(e){ document.getElementById('status').textContent='demo • chrome ble required'; sys('demo mode - click SCAN PEERS again for real mesh'); }
 }
-
 function send(){
- let txt=inputEl.value.trim(), nick=nickEl.value||'anon';
- if(!txt) return;
- if(txt.startsWith('/nick ')){ nickEl.value=txt.slice(6); sys('nick -> '+nickEl.value); inputEl.value=''; return; }
- if(txt.startsWith('/j ')){ sys('joined '+txt.slice(3)); inputEl.value=''; return; }
- if(txt==='/clear'){ logEl.innerHTML=''; return; }
- add(`<span class="time">[${ts()}]</span> <span class="room">#mesh</span> <span class="nick">&lt;${nick}&gt;</span> ${txt} <span class="enc">🔒</span>`);
- inputEl.value='';
- setTimeout(()=>add(`<span class="time">[${ts()}]</span> <span class="room">#mesh</span> <span class="nick">&lt;peer:2a4f&gt;</span> ack 🔒 <span class="enc">e2e</span>`),700);
+  let txt=inputEl.value.trim(), nick=nickEl.value||'anon';
+  if(!txt) return;
+  if(txt.startsWith('/nick ')){ nickEl.value=txt.slice(6); sys('nick -> '+nickEl.value); inputEl.value=''; return; }
+  if(txt.startsWith('/j ')){ sys('joined '+txt.slice(3)); inputEl.value=''; return; }
+  if(txt==='/clear'){ logEl.innerHTML=''; return; }
+  add(`<span class="time">[${ts()}]</span> <span class="room">#mesh</span> <span class="nick">&lt;${nick}&gt;</span> ${txt} <span class="enc">🔒</span>`);
+  inputEl.value='';
+  setTimeout(()=>add(`<span class="time">[${ts()}]</span> <span class="room">#mesh</span> <span class="nick">&lt;peer:2a4f&gt;</span> ack 🔒 <span class="enc">e2e</span>`),700);
 }
-
 inputEl.addEventListener('keydown', e=>{if(e.key==='Enter') send();});
-window.onload=()=>{ sys('nasar mesh v1.0 - offline p2p'); sys('e2e encryption: AES-256 + X25519 • active'); sys('transport: BLE mesh'+(wifiOn?' + WiFi Direct':'')); scan(); };
+window.onload=()=>{ sys('nasar mesh v1.0 - offline p2p'); sys('e2e encryption: AES-256 + X25519 • active'); sys('click [SCAN PEERS] to find mesh nodes'); };
 </script>
 </body>
 </html>
