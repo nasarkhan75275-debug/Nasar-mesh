@@ -5,19 +5,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Backup main.dart
+        run: cp lib/main.dart /tmp/main.dart || echo "no main.dart yet"
+      
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
-      - run: flutter create . --project-name nasar_mesh
-      - run: |
-          mkdir -p lib
-          echo "$MAIN_DART" > lib/main.dart
-        env:
-          MAIN_DART: |
-            import 'package:flutter/material.dart';
+          channel: 'stable'
+      
+      - name: Create Android project
+        run: flutter create . --org com.nasar.mesh --project-name nasar_mesh --platforms=android --no-pub
+      
+      - name: Restore main.dart
+        run: cp /tmp/main.dart lib/main.dart
+      
       - run: flutter pub get
+      
       - run: flutter build apk --release
-      - uses: actions/upload-artifact@v3
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: nasar-mesh-apk
           path: build/app/outputs/flutter-apk/app-release.apk
