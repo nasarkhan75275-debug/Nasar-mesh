@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NASAR Mesh - No Internet Chat</title>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:system-ui;text-align:center}
+header{padding:20px;background:#111;border-bottom:1px solid #333}
+h1{margin:0;font-size:24px}
+.badge{background:#19c37d;color:#000;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.box{background:#111;margin:12px;padding:14px;border-radius:14px;border:1px solid #222}
+button{background:#fff;color:#000;border:none;padding:12px 18px;border-radius:22px;font-weight:900}
+#msgs{height:320px;overflow-y:auto;text-align:left}
+.msg{padding:8px;border-bottom:1px solid #222}
+input{width:68%;padding:12px;border-radius:20px;border:1px solid #333;background:#000;color:#fff}
+</style>
+</head>
+<body>
+<header>
+<h1>🔵 NASAR Mesh</h1>
+<span class="badge">Bina Internet • Bluetooth • 100m</span>
+<p style="color:#888;font-size:12px">Made by Nasar Khan, Patna</p>
+</header>
+
+<div class="box">
+<button onclick="startMesh()">🔍 Aas paas dhoondo</button>
+<p id="status" style="color:#888;font-size:12px">Bluetooth OFF</p>
+</div>
+
+<div class="box"><div id="msgs"></div></div>
+
+<div class="box">
+<input id="inp" placeholder="Bina net ke message likho...">
+<button onclick="sendMsg()">Send 🚀</button>
+</div>
+
+<div class="box" style="font-size:11px;color:#666">
+<b>Kaise kaam karega?</b><br>
+Web version GitHub Pages pe demo hai. Full offline ke liye Android APK (Nearby Connections) isi repo me ayega.<br>
+Chrome me HTTPS pe Bluetooth permission maangega.
+</div>
+
+<script>
+let found=[];
+function add(t){
+  let m=document.getElementById('msgs');
+  m.innerHTML+='<div class=msg>'+t+'</div>';
+  m.scrollTop=m.scrollHeight;
+}
+async function startMesh(){
+  let s=document.getElementById('status');
+  s.innerText='Scanning...';
+  try{
+    let d=await navigator.bluetooth.requestDevice({acceptAllDevices:true});
+    s.innerText='Mila: '+(d.name||'Device');
+    add('✅ Connected: '+(d.name||'Unknown'));
+  }catch(e){
+    s.innerText='Demo Mode (Chrome me HTTPS chahiye)';
+    add('🔍 Demo: 2 log mile - Nasar-Patna (12m), Aman-Bihar (45m)');
+    add('💡 Tip: Android Studio wala full code README me hai');
+  }
+}
+function sendMsg(){
+  let i=document.getElementById('inp');
+  if(!i.value) return;
+  add('Tu: '+i.value+' <span style="color:#888">[100m me broadcast]</span>');
+  i.value='';
+  setTimeout(()=>add('Nasar-Patna: Mil gaya bhai! 🔥 (Bluetooth)'),900);
+}
+add('System: NASAR Mesh ready. Aas paas dhoondo dabao.');
+</script>
+</body>
+</html>
